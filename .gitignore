@@ -8,9 +8,10 @@
 !src/
 !src/**
 
-# Keep only the devcontainer startup script.
+# Keep only the devcontainer startup script and start sh.
 !.devcontainer/
 !.devcontainer/start.sh
+!start_go2_base.sh
 
 # Drop generated artifacts even if they are under src/.
 **/build/
