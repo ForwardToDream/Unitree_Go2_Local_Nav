@@ -1,0 +1,26 @@
+# Ignore everything by default.
+*
+
+# Keep this ignore policy visible.
+!.gitignore
+
+# Keep source code.
+!src/
+!src/**
+
+# Keep only the devcontainer startup script.
+!.devcontainer/
+!.devcontainer/start.sh
+
+# Drop generated artifacts even if they are under src/.
+**/build/
+**/install/
+**/log/
+**/__pycache__/
+*.py[cod]
+*.so
+
+# Drop local editor/runtime noise.
+.vscode/
+.cache/
+*.log

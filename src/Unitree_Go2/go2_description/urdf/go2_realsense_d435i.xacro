@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro
+    name="go2_realsense_d435i"
+    params="
+      parent:=d435i_link
+      sensor_name:=camera">
+
+    <!--
+      Lightweight D435i frame scaffold for RViz simulation base.
+      No external driver/package is required here; this file defines only
+      deterministic links and joints so downstream sensor nodes have stable
+      frame names to publish against.
+    -->
+    <link name="${sensor_name}_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.09 0.025 0.025"/>
+        </geometry>
+        <material name="d435i_gray">
+          <color rgba="0.2 0.2 0.2 1.0"/>
+        </material>
+      </visual>
+    </link>
+    <joint name="${sensor_name}_link_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${sensor_name}_link"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+
+    <link name="${sensor_name}_depth_frame"/>
+    <joint name="${sensor_name}_depth_frame_joint" type="fixed">
+      <parent link="${sensor_name}_link"/>
+      <child link="${sensor_name}_depth_frame"/>
+      <origin xyz="0.048 0 0" rpy="0 0 0"/>
+    </joint>
+
+    <link name="${sensor_name}_depth_optical_frame"/>
+    <joint name="${sensor_name}_depth_optical_joint" type="fixed">
+      <parent link="${sensor_name}_depth_frame"/>
+      <child link="${sensor_name}_depth_optical_frame"/>
+      <origin xyz="0 0 0" rpy="-1.57079632679 0 -1.57079632679"/>
+    </joint>
+
+    <link name="${sensor_name}_color_frame"/>
+    <joint name="${sensor_name}_color_frame_joint" type="fixed">
+      <parent link="${sensor_name}_link"/>
+      <child link="${sensor_name}_color_frame"/>
+      <origin xyz="0.048 0 0" rpy="0 0 0"/>
+    </joint>
+
+    <link name="${sensor_name}_color_optical_frame"/>
+    <joint name="${sensor_name}_color_optical_joint" type="fixed">
+      <parent link="${sensor_name}_color_frame"/>
+      <child link="${sensor_name}_color_optical_frame"/>
+      <origin xyz="0 0 0" rpy="-1.57079632679 0 -1.57079632679"/>
+    </joint>
+
+    <link name="${sensor_name}_imu_link"/>
+    <joint name="${sensor_name}_imu_joint" type="fixed">
+      <parent link="${sensor_name}_link"/>
+      <child link="${sensor_name}_imu_link"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+  </xacro:macro>
+</robot>

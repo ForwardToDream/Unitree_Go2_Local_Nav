@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro
+    name="go2_gazebo_planar_move"
+    params="
+      cmd_vel_topic:=/cmd_vel
+      odom_topic:=/go2/gazebo_odom
+      odom_frame:=odom
+      base_frame:=base_link
+      odom_rate:=30.0
+      cmd_timeout:=0.5
+      max_linear:=1.0
+      max_angular:=2.0">
+
+    <!--
+      Kinematic planar motion adapter for Gazebo Classic.
+      It moves the whole model as a flat rigid body while gait control is absent.
+    -->
+    <gazebo>
+      <plugin name="go2_kinematic_planar_move" filename="libgo2_kinematic_planar_move.so">
+        <cmd_vel_topic>${cmd_vel_topic}</cmd_vel_topic>
+        <odometry_frame>${odom_frame}</odometry_frame>
+        <robot_base_frame>${base_frame}</robot_base_frame>
+        <cmd_timeout>${cmd_timeout}</cmd_timeout>
+        <max_linear>${max_linear}</max_linear>
+        <max_angular>${max_angular}</max_angular>
+        <lock_z>true</lock_z>
+      </plugin>
+    </gazebo>
+  </xacro:macro>
+</robot>

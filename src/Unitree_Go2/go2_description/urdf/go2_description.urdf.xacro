@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<robot name="go2_description" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:include filename="$(find go2_description)/urdf/go2_nav_frames.xacro"/>
+  <xacro:include filename="$(find go2_description)/urdf/go2_official_body.xacro"/>
+  <xacro:include filename="$(find go2_description)/urdf/go2_lidar.xacro"/>
+  <xacro:include filename="$(find go2_description)/urdf/go2_d435i_mount.xacro"/>
+  <xacro:include filename="$(find go2_description)/urdf/go2_realsense_d435i.xacro"/>
+  <xacro:include filename="$(find go2_description)/urdf/go2_gazebo_d435i_sensor.xacro"/>
+  <xacro:include filename="$(find go2_description)/urdf/go2_gazebo_planar_move.xacro"/>
+
+  <xacro:arg name="enable_lidar" default="true"/>
+  <xacro:arg name="enable_gazebo_lidar_plugin" default="false"/>
+  <xacro:arg name="gazebo_scan_topic" default="/unilidar/laserscan"/>
+  <xacro:arg name="gazebo_lidar_cloud_topic" default="/unilidar/cloud"/>
+  <xacro:arg name="gazebo_lidar_update_rate" default="5.55"/>
+  <xacro:arg name="gazebo_lidar_cloud_horizontal_samples" default="592"/>
+  <xacro:arg name="gazebo_lidar_cloud_vertical_samples" default="39"/>
+  <xacro:arg name="gazebo_lidar_scan_samples" default="592"/>
+  <xacro:arg name="gazebo_lidar_sensor_type" default="gpu_ray"/>
+  <xacro:arg name="gazebo_lidar_min_angle" default="-3.14159265359"/>
+  <xacro:arg name="gazebo_lidar_max_angle" default="3.14159265359"/>
+  <xacro:arg name="gazebo_lidar_vertical_min_angle" default="-0.83775804096"/>
+  <xacro:arg name="gazebo_lidar_vertical_max_angle" default="0.83775804096"/>
+  <xacro:arg name="gazebo_lidar_min_range" default="0.05"/>
+  <xacro:arg name="gazebo_lidar_max_range" default="30.0"/>
+  <xacro:arg name="enable_depth_camera" default="true"/>
+  <xacro:arg name="enable_gazebo_depth_plugin" default="false"/>
+  <xacro:arg name="enable_gazebo_planar_move" default="false"/>
+  <xacro:arg name="freeze_gazebo_model" default="false"/>
+  <xacro:arg name="gazebo_cmd_vel_topic" default="/cmd_vel"/>
+  <xacro:arg name="d435i_pitch_deg" default="-22.5"/>
+  <xacro:arg name="d435i_collision_padding_m" default="0.002"/>
+
+  <xacro:go2_nav_frames/>
+  <xacro:go2_official_body freeze_joints="$(arg freeze_gazebo_model)"/>
+
+  <xacro:if value="$(arg enable_lidar)">
+    <xacro:go2_lidar
+      parent="base"
+      enable_gazebo_plugin="$(arg enable_gazebo_lidar_plugin)"
+      cloud_topic="$(arg gazebo_lidar_cloud_topic)"
+      laserscan_topic="$(arg gazebo_scan_topic)"
+      update_rate="$(arg gazebo_lidar_update_rate)"
+      cloud_horizontal_samples="$(arg gazebo_lidar_cloud_horizontal_samples)"
+      cloud_vertical_samples="$(arg gazebo_lidar_cloud_vertical_samples)"
+      scan_samples="$(arg gazebo_lidar_scan_samples)"
+      lidar_sensor_type="$(arg gazebo_lidar_sensor_type)"
+      min_angle="$(arg gazebo_lidar_min_angle)"
+      max_angle="$(arg gazebo_lidar_max_angle)"
+      vertical_min_angle="$(arg gazebo_lidar_vertical_min_angle)"
+      vertical_max_angle="$(arg gazebo_lidar_vertical_max_angle)"
+      min_range="$(arg gazebo_lidar_min_range)"
+      max_range="$(arg gazebo_lidar_max_range)"/>
+  </xacro:if>
+
+  <xacro:if value="$(arg enable_gazebo_planar_move)">
+    <xacro:go2_gazebo_planar_move
+      cmd_vel_topic="$(arg gazebo_cmd_vel_topic)"/>
+  </xacro:if>
+
+  <xacro:if value="$(arg enable_depth_camera)">
+    <xacro:go2_d435i_mount
+      parent="base"
+      d435i_pitch_deg="$(arg d435i_pitch_deg)"
+      d435i_collision_padding_m="$(arg d435i_collision_padding_m)"/>
+    <xacro:go2_realsense_d435i
+      parent="d435i_link"
+      sensor_name="camera"/>
+    <xacro:if value="$(arg enable_gazebo_depth_plugin)">
+      <xacro:go2_gazebo_d435i_sensor sensor_name="camera"/>
+    </xacro:if>
+  </xacro:if>
+</robot>

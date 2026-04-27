@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro
+    name="go2_gazebo_d435i_sensor"
+    params="
+      sensor_name:=camera
+      update_rate:=10.0
+      image_width:=640
+      image_height:=480
+      horizontal_fov:=1.51844
+      near_clip:=0.10
+      far_clip:=8.0
+      depth_image_topic:=/go2/camera/depth/image_raw
+      depth_info_topic:=/go2/camera/depth/camera_info
+      points_topic:=/go2/camera/depth/points
+      color_image_topic:=/go2/camera/color/image_raw
+      color_info_topic:=/go2/camera/color/camera_info">
+
+    <!--
+      Gazebo Classic depth camera plugin for the D435i frame scaffold.
+      Topic defaults align with the project-side go2_base.launch.py conventions.
+    -->
+    <gazebo reference="${sensor_name}_depth_frame">
+      <sensor name="${sensor_name}" type="depth">
+        <always_on>true</always_on>
+        <update_rate>${update_rate}</update_rate>
+        <visualize>false</visualize>
+        <pose>0 0 0 0 0 0</pose>
+        <camera>
+          <horizontal_fov>${horizontal_fov}</horizontal_fov>
+          <image>
+            <width>${image_width}</width>
+            <height>${image_height}</height>
+            <format>B8G8R8</format>
+          </image>
+          <depth_camera>
+            <output>depths</output>
+          </depth_camera>
+          <clip>
+            <near>${near_clip}</near>
+            <far>${far_clip}</far>
+          </clip>
+        </camera>
+        <plugin name="${sensor_name}_gazebo_ros_depth_camera" filename="libgazebo_ros_camera.so">
+          <triggered>false</triggered>
+          <ros>
+            <namespace>/go2</namespace>
+            <!-- Keep depth topics on plugin defaults; remap color and point cloud naming. -->
+            <remapping>${sensor_name}/image_raw:=${sensor_name}/color/image_raw</remapping>
+            <remapping>${sensor_name}/camera_info:=${sensor_name}/color/camera_info</remapping>
+            <remapping>${sensor_name}/points:=${sensor_name}/depth/points</remapping>
+          </ros>
+          <camera_name>${sensor_name}</camera_name>
+          <frame_name>${sensor_name}_depth_optical_frame</frame_name>
+          <min_depth>${near_clip}</min_depth>
+          <max_depth>${far_clip}</max_depth>
+        </plugin>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+</robot>

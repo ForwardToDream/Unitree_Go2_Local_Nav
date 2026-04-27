@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro
+    name="go2_d435i_mount"
+    params="
+      parent:=base
+      d435i_pitch_deg:=-22.5
+      d435i_collision_padding_m:=0.002">
+
+    <!--
+      D435i external installation reference.
+      This is the measured enclosure-center mounting point relative to Go2 base.
+      It is NOT the RealSense depth center, color center, or camera_link origin.
+      Nominal mount position relative to base:
+        xyz = (0.34715, -0.00003, 0.09797) [m]
+      Pitch adjustment range for d435i_pitch_deg: [0, -45] degrees.
+
+      Engineering uncertainty assumptions for the robot-to-enclosure mounting:
+        - Go2 to D435i enclosure-center measurement: +/-0.003 m
+        - D435i pitch measurement: +/-5 deg
+        - D435i enclosure manufacturing size reference: about +/-0.00015 m
+      These assumptions apply only to the external mount measurement and do not
+      apply to factory-calibrated RealSense internal depth/color/imu extrinsics.
+      High-precision RGB-D or visual alignment can replace this later with a
+      dedicated calibration result if the project needs it.
+    -->
+    <link name="d435i_mount_center"/>
+    <joint name="d435i_mount_center_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="d435i_mount_center"/>
+      <origin
+        xyz="0.34715 -0.00003 0.09797"
+        rpy="0 ${d435i_pitch_deg * 3.141592653589793 / 180.0} 0"/>
+    </joint>
+
+    <!--
+      Project-side transition link for integrating the external mount reference
+      with the official RealSense internal frame tree.
+      d435i_link represents the nominal enclosure body for visualization and a
+      conservative collision proxy; it is not an official RealSense optical or
+      sensing reference.
+    -->
+    <link name="d435i_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.090 0.025 0.025"/>
+        </geometry>
+        <material name="d435i_body_gray">
+          <color rgba="0.25 0.25 0.25 1.0"/>
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box
+            size="${0.090 + 2.0 * d435i_collision_padding_m}
+                  ${0.025 + 2.0 * d435i_collision_padding_m}
+                  ${0.025 + 2.0 * d435i_collision_padding_m}"/>
+        </geometry>
+      </collision>
+    </link>
+    <joint name="d435i_mount_center_to_d435i_link_joint" type="fixed">
+      <parent link="d435i_mount_center"/>
+      <child link="d435i_link"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+  </xacro:macro>
+</robot>

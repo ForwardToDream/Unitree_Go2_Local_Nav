@@ -1,0 +1,150 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro
+    name="go2_lidar"
+    params="
+      parent:=base
+      enable_gazebo_plugin:=false
+      cloud_topic:=/unilidar/cloud
+      laserscan_topic:=/unilidar/laserscan
+      update_rate:=5.55
+      cloud_horizontal_samples:=592
+      cloud_vertical_samples:=39
+      scan_samples:=592
+      lidar_sensor_type:=gpu_ray
+      min_angle:=-3.14159265359
+      max_angle:=3.14159265359
+      vertical_min_angle:=-0.83775804096
+      vertical_max_angle:=0.83775804096
+      min_range:=0.05
+      max_range:=30.0">
+    <link name="lidar_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.035" length="0.05"/>
+        </geometry>
+        <material name="lidar_black">
+          <color rgba="0.08 0.08 0.08 1.0"/>
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.035" length="0.05"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="lidar_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="lidar_link"/>
+      <origin xyz="0.27 0.0 0.11" rpy="0 0 0"/>
+    </joint>
+
+    <link name="lidar_optical_frame"/>
+    <joint name="lidar_optical_joint" type="fixed">
+      <parent link="lidar_link"/>
+      <child link="lidar_optical_frame"/>
+      <origin xyz="0 0 0" rpy="-1.57079632679 0 -1.57079632679"/>
+    </joint>
+
+    <!-- Unitree L2-compatible frame aliases -->
+    <link name="unilidar_lidar"/>
+    <joint name="unilidar_lidar_joint" type="fixed">
+      <parent link="lidar_link"/>
+      <child link="unilidar_lidar"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+
+    <link name="unilidar_imu"/>
+    <joint name="unilidar_imu_joint" type="fixed">
+      <parent link="unilidar_lidar"/>
+      <child link="unilidar_imu"/>
+      <!-- From Unitree SDK docs: T_LI translation -->
+      <origin xyz="-0.007698 -0.014655 0.00667" rpy="0 0 0"/>
+    </joint>
+
+    <xacro:if value="${enable_gazebo_plugin}">
+      <gazebo reference="unilidar_lidar">
+        <!-- 3D-priority tuning from L2 manual:
+             update_rate=5.55Hz, vertical_scan=216Hz => vertical_samples=39
+             sample_rate=128000pts/s => horizontal_samples=592 -->
+        <sensor name="lidar_cloud_sensor" type="${lidar_sensor_type}">
+          <always_on>true</always_on>
+          <visualize>false</visualize>
+          <update_rate>${update_rate}</update_rate>
+          <ray>
+            <scan>
+              <horizontal>
+                <samples>${cloud_horizontal_samples}</samples>
+                <resolution>1.0</resolution>
+                <min_angle>${min_angle}</min_angle>
+                <max_angle>${max_angle}</max_angle>
+              </horizontal>
+              <vertical>
+                <samples>${cloud_vertical_samples}</samples>
+                <resolution>1.0</resolution>
+                <min_angle>${vertical_min_angle}</min_angle>
+                <max_angle>${vertical_max_angle}</max_angle>
+              </vertical>
+            </scan>
+            <range>
+              <min>${min_range}</min>
+              <max>${max_range}</max>
+              <resolution>0.0045</resolution>
+            </range>
+            <noise>
+              <type>gaussian</type>
+              <mean>0.0</mean>
+              <stddev>0.01</stddev>
+            </noise>
+          </ray>
+          <plugin name="go2_lidar_ros_cloud_plugin" filename="libgazebo_ros_ray_sensor.so">
+            <ros>
+              <namespace>/</namespace>
+              <remapping>~/out:=${cloud_topic}</remapping>
+            </ros>
+            <frame_name>unilidar_lidar</frame_name>
+            <output_type>sensor_msgs/PointCloud2</output_type>
+          </plugin>
+        </sensor>
+
+        <!-- 2D scan is kept for compatibility; sample count follows 3D horizontal samples -->
+        <sensor name="lidar_scan_sensor" type="${lidar_sensor_type}">
+          <always_on>true</always_on>
+          <visualize>false</visualize>
+          <update_rate>${update_rate}</update_rate>
+          <ray>
+            <scan>
+              <horizontal>
+                <samples>${scan_samples}</samples>
+                <resolution>1.0</resolution>
+                <min_angle>${min_angle}</min_angle>
+                <max_angle>${max_angle}</max_angle>
+              </horizontal>
+            </scan>
+            <range>
+              <min>${min_range}</min>
+              <max>${max_range}</max>
+              <resolution>0.0045</resolution>
+            </range>
+            <noise>
+              <type>gaussian</type>
+              <mean>0.0</mean>
+              <stddev>0.01</stddev>
+            </noise>
+          </ray>
+          <plugin name="go2_lidar_ros_scan_plugin" filename="libgazebo_ros_ray_sensor.so">
+            <ros>
+              <namespace>/</namespace>
+              <remapping>~/out:=${laserscan_topic}</remapping>
+            </ros>
+            <frame_name>unilidar_lidar</frame_name>
+            <output_type>sensor_msgs/LaserScan</output_type>
+          </plugin>
+        </sensor>
+      </gazebo>
+    </xacro:if>
+  </xacro:macro>
+</robot>

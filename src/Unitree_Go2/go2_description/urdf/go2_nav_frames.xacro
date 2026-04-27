@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!--
+    Stage-1 navigation wrapper frames.
+    Responsibility boundary:
+      map -> odom       : future localization system
+      odom -> base_link : future local odometry / state estimation
+      base_link -> sensors and official body subtree : URDF + robot_state_publisher
+  -->
+  <xacro:macro name="go2_nav_frames" params="">
+    <link name="base_footprint"/>
+    <link name="base_link"/>
+
+    <!--
+      Stage-1 placeholder implementation:
+      base_footprint is kept explicitly so downstream interfaces can converge on
+      a stable frame name now. At this stage it is only a description-layer
+      placeholder and must not be treated as a substitute for map or odom.
+      If the project later needs a strict ground-projected footprint frame,
+      state estimation or a dedicated TF node can replace or correct this link.
+    -->
+    <joint name="base_link_to_base_footprint_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="base_footprint"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+
+    <!--
+      base_link is the navigation-semantic robot root.
+      Keep the official Unitree body rooted at base so the upstream naming stays
+      intact while navigation, local odometry, and control integrations anchor
+      on base_link.
+    -->
+    <joint name="base_link_to_base_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="base"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+  </xacro:macro>
+</robot>
