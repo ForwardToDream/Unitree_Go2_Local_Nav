@@ -28,6 +28,7 @@ STALE_TIMEOUT_SEC="0.5"
 MDOG_PACKAGES=(
   mdog_interfaces
   mdog_owner_intent_ui
+  mdog_owner_model
   mdog_pointcloud_fusion
   mdog_semantic_map
   mdog_traversability
@@ -210,6 +211,7 @@ safe_source() {
 mdog_install_ready() {
   [[ -f "${WS_DIR}/install/setup.bash" ]] \
     && [[ -x "${WS_DIR}/install/mdog_owner_intent_ui/lib/mdog_owner_intent_ui/mdog_owner_intent_ui.py" ]] \
+    && [[ -x "${WS_DIR}/install/mdog_owner_model/lib/mdog_owner_model/mdog_owner_model_node" ]] \
     && [[ -x "${WS_DIR}/install/mdog_pointcloud_fusion/lib/mdog_pointcloud_fusion/mdog_pointcloud_fusion_node" ]] \
     && [[ -x "${WS_DIR}/install/mdog_semantic_map/lib/mdog_semantic_map/mdog_semantic_map_node" ]] \
     && [[ -x "${WS_DIR}/install/mdog_traversability/lib/mdog_traversability/mdog_traversability_node" ]] \

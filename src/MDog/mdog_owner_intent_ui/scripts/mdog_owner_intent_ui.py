@@ -4,7 +4,7 @@ from tkinter import ttk
 
 import rclpy
 from geometry_msgs.msg import Twist
-from mdog_interfaces.msg import OwnerIntent
+from mdog_interfaces.msg import NavDecision, NavFeedback, OwnerIntent
 from rclpy.node import Node
 
 
@@ -13,6 +13,8 @@ class MDogOwnerIntentUi(Node):
         super().__init__("mdog_owner_intent_ui")
         self.declare_parameter("intent_topic", "/mdog/owner_intent")
         self.declare_parameter("cmd_vel_topic", "/cmd_vel")
+        self.declare_parameter("nav_feedback_topic", "/mdog/nav_feedback")
+        self.declare_parameter("nav_decision_topic", "/mdog/nav_decision")
         self.declare_parameter("publish_rate", 10.0)
         self.declare_parameter("default_speed", 0.20)
 
@@ -21,6 +23,12 @@ class MDogOwnerIntentUi(Node):
         )
         self.cmd_vel_topic = (
             self.get_parameter("cmd_vel_topic").get_parameter_value().string_value
+        )
+        self.nav_feedback_topic = (
+            self.get_parameter("nav_feedback_topic").get_parameter_value().string_value
+        )
+        self.nav_decision_topic = (
+            self.get_parameter("nav_decision_topic").get_parameter_value().string_value
         )
         self.publish_rate = max(
             1.0, self.get_parameter("publish_rate").get_parameter_value().double_value
@@ -33,14 +41,25 @@ class MDogOwnerIntentUi(Node):
         self.cmd_vel_sub = self.create_subscription(
             Twist, self.cmd_vel_topic, self.on_cmd_vel, 10
         )
+        self.nav_feedback_sub = self.create_subscription(
+            NavFeedback, self.nav_feedback_topic, self.on_nav_feedback, 10
+        )
+        self.nav_decision_sub = self.create_subscription(
+            NavDecision, self.nav_decision_topic, self.on_nav_decision, 10
+        )
         self.get_logger().info(
-            f"publishing owner intent on {self.intent_topic}; watching cmd_vel on {self.cmd_vel_topic}"
+            "publishing owner intent on {}; watching cmd_vel={}, feedback={}, decision={}".format(
+                self.intent_topic,
+                self.cmd_vel_topic,
+                self.nav_feedback_topic,
+                self.nav_decision_topic,
+            )
         )
 
         self.root = tk.Tk()
         self.root.title("MDog Owner Intent")
-        self.root.geometry("560x500")
-        self.root.minsize(500, 460)
+        self.root.geometry("760x640")
+        self.root.minsize(700, 580)
 
         self.command = tk.IntVar(value=OwnerIntent.STOP)
         self.strength = tk.DoubleVar(value=0.7)
@@ -48,6 +67,8 @@ class MDogOwnerIntentUi(Node):
         self.confidence = tk.DoubleVar(value=1.0)
         self.last_publish = tk.StringVar(value="STOP")
         self.cmd_vel_status = tk.StringVar(value="waiting for cmd_vel")
+        self.nav_feedback_status = tk.StringVar(value="waiting for nav_feedback")
+        self.nav_decision_status = tk.StringVar(value="waiting for nav_decision")
         self.publish_enabled = tk.BooleanVar(value=True)
 
         self._build_ui()
@@ -129,6 +150,14 @@ class MDogOwnerIntentUi(Node):
         ttk.Label(footer, text=f"watching: {self.cmd_vel_topic}").grid(
             row=2, column=0, columnspan=2, sticky="w", pady=(4, 0)
         )
+        ttk.Label(footer, text="feedback:").grid(row=3, column=0, sticky="w", pady=(8, 0))
+        ttk.Label(footer, textvariable=self.nav_feedback_status).grid(
+            row=3, column=1, sticky="w", padx=(8, 0), pady=(8, 0)
+        )
+        ttk.Label(footer, text="decision:").grid(row=4, column=0, sticky="w", pady=(8, 0))
+        ttk.Label(footer, textvariable=self.nav_decision_status).grid(
+            row=4, column=1, sticky="w", padx=(8, 0), pady=(8, 0)
+        )
 
     def _add_slider(self, parent, row, label, variable, minimum, maximum):
         value_label = ttk.Label(parent, width=7, anchor="e")
@@ -164,6 +193,25 @@ class MDogOwnerIntentUi(Node):
         }
         return names.get(command, "UNKNOWN")
 
+    def feedback_name(self, status):
+        names = {
+            NavFeedback.CLEAR: "CLEAR",
+            NavFeedback.ADJUSTING: "ADJUSTING",
+            NavFeedback.BLOCKED: "BLOCKED",
+            NavFeedback.NARROW_PASSAGE: "NARROW_PASSAGE",
+            NavFeedback.SENSOR_STALE: "SENSOR_STALE",
+            NavFeedback.EMERGENCY_STOP: "EMERGENCY_STOP",
+        }
+        return names.get(status, f"UNKNOWN({status})")
+
+    def decision_name(self, handling):
+        names = {
+            NavDecision.ACCEPTED: "ACCEPTED",
+            NavDecision.ADJUSTED: "ADJUSTED",
+            NavDecision.REJECTED: "REJECTED",
+        }
+        return names.get(handling, f"UNKNOWN({handling})")
+
     def make_intent(self):
         msg = OwnerIntent()
         msg.header.stamp = self.get_clock().now().to_msg()
@@ -182,6 +230,22 @@ class MDogOwnerIntentUi(Node):
                 msg.linear.y,
                 msg.linear.z,
                 msg.angular.z,
+            )
+        )
+
+    def on_nav_feedback(self, msg):
+        self.nav_feedback_status.set(
+            "{}  {}".format(self.feedback_name(msg.status), msg.message)
+        )
+
+    def on_nav_decision(self, msg):
+        self.nav_decision_status.set(
+            "{}  {}  cmd x={:+.2f} y={:+.2f} yaw={:+.2f}".format(
+                self.decision_name(msg.intent_handling),
+                msg.reason,
+                msg.cmd_vel.linear.x,
+                msg.cmd_vel.linear.y,
+                msg.cmd_vel.angular.z,
             )
         )
 

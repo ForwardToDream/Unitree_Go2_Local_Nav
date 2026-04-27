@@ -16,6 +16,8 @@
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "tf2_ros/buffer.h"
 #include "tf2_ros/transform_listener.h"
+#include "visualization_msgs/msg/marker.hpp"
+#include "visualization_msgs/msg/marker_array.hpp"
 
 using namespace std::chrono_literals;
 
@@ -39,6 +41,7 @@ class MDogPointCloudFusionNode : public rclcpp::Node {
     lidar_topic_ = declare_parameter<std::string>("lidar_cloud_topic", "/unilidar/cloud");
     depth_topic_ = declare_parameter<std::string>("depth_cloud_topic", "/go2/camera/depth/points");
     output_topic_ = declare_parameter<std::string>("output_topic", "/mdog/fused_points");
+    envelope_topic_ = declare_parameter<std::string>("envelope_marker_topic", "/mdog/dog_envelope");
     front_m_ = declare_parameter<double>("roi_front_m", 4.0);
     back_m_ = declare_parameter<double>("roi_back_m", 0.8);
     side_m_ = declare_parameter<double>("roi_side_m", 2.0);
@@ -47,6 +50,12 @@ class MDogPointCloudFusionNode : public rclcpp::Node {
     voxel_size_ = declare_parameter<double>("voxel_size_m", 0.05);
     stale_timeout_sec_ = declare_parameter<double>("stale_timeout_sec", 0.75);
     publish_rate_ = declare_parameter<double>("publish_rate", 10.0);
+    self_filter_enabled_ = declare_parameter<bool>("self_filter_enabled", true);
+    self_filter_front_m_ = declare_parameter<double>("self_filter_front_m", 0.75);
+    self_filter_back_m_ = declare_parameter<double>("self_filter_back_m", 0.65);
+    self_filter_side_m_ = declare_parameter<double>("self_filter_side_m", 0.45);
+    self_filter_min_z_ = declare_parameter<double>("self_filter_min_z", -0.60);
+    self_filter_max_z_ = declare_parameter<double>("self_filter_max_z", 0.80);
 
     tf_buffer_ = std::make_unique<tf2_ros::Buffer>(get_clock());
     tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
@@ -65,6 +74,8 @@ class MDogPointCloudFusionNode : public rclcpp::Node {
           latest_depth_.received_at = get_clock()->now();
         });
     fused_pub_ = create_publisher<sensor_msgs::msg::PointCloud2>(output_topic_, 10);
+    envelope_pub_ =
+        create_publisher<visualization_msgs::msg::MarkerArray>(envelope_topic_, 10);
 
     const auto period = std::chrono::duration<double>(1.0 / std::max(1.0, publish_rate_));
     timer_ = create_wall_timer(
@@ -74,6 +85,12 @@ class MDogPointCloudFusionNode : public rclcpp::Node {
     RCLCPP_INFO(get_logger(), "MDog pointcloud fusion: %s + %s -> %s in %s",
                 lidar_topic_.c_str(), depth_topic_.c_str(), output_topic_.c_str(),
                 target_frame_.c_str());
+    RCLCPP_INFO(
+        get_logger(),
+        "Self filter %s: x=[-%.2f, %.2f], y=[-%.2f, %.2f], z=[%.2f, %.2f]",
+        self_filter_enabled_ ? "enabled" : "disabled", self_filter_back_m_,
+        self_filter_front_m_, self_filter_side_m_, self_filter_side_m_,
+        self_filter_min_z_, self_filter_max_z_);
   }
 
  private:
@@ -89,6 +106,7 @@ class MDogPointCloudFusionNode : public rclcpp::Node {
     std::vector<Point3> points;
     points.reserve(20000);
     const rclcpp::Time now = get_clock()->now();
+    publishEnvelopeMarkers(now);
     appendCloudIfFresh(lidar, now, points);
     appendCloudIfFresh(depth, now, points);
     if (points.empty()) {
@@ -144,6 +162,9 @@ class MDogPointCloudFusionNode : public rclcpp::Node {
         if (x < -back_m_ || x > front_m_ || std::abs(y) > side_m_ || z < min_z_ || z > max_z_) {
           continue;
         }
+        if (isInsideSelfFilter(x, y, z)) {
+          continue;
+        }
         const std::string key = voxelKey(x, y, z);
         if (!occupied_voxels.insert(key).second) {
           continue;
@@ -162,6 +183,15 @@ class MDogPointCloudFusionNode : public rclcpp::Node {
     const int iy = static_cast<int>(std::floor(y / voxel_size_));
     const int iz = static_cast<int>(std::floor(z / voxel_size_));
     return std::to_string(ix) + ":" + std::to_string(iy) + ":" + std::to_string(iz);
+  }
+
+  bool isInsideSelfFilter(double x, double y, double z) const {
+    if (!self_filter_enabled_) {
+      return false;
+    }
+    return x >= -self_filter_back_m_ && x <= self_filter_front_m_ &&
+           std::abs(y) <= self_filter_side_m_ && z >= self_filter_min_z_ &&
+           z <= self_filter_max_z_;
   }
 
   sensor_msgs::msg::PointCloud2 makePointCloud(
@@ -189,10 +219,51 @@ class MDogPointCloudFusionNode : public rclcpp::Node {
     return cloud;
   }
 
+  void publishEnvelopeMarkers(const rclcpp::Time& stamp) {
+    visualization_msgs::msg::MarkerArray markers;
+    markers.markers.push_back(makeBoxMarker(
+        stamp, "dog_self_filter", 0,
+        (self_filter_front_m_ - self_filter_back_m_) * 0.5, 0.0,
+        (self_filter_min_z_ + self_filter_max_z_) * 0.5,
+        self_filter_front_m_ + self_filter_back_m_, self_filter_side_m_ * 2.0,
+        self_filter_max_z_ - self_filter_min_z_, 0.1, 0.45, 1.0, 0.18,
+        "dog self-filter"));
+
+    envelope_pub_->publish(markers);
+  }
+
+  visualization_msgs::msg::Marker makeBoxMarker(
+      const rclcpp::Time& stamp, const std::string& ns, int id, double x, double y,
+      double z, double size_x, double size_y, double size_z, float r, float g,
+      float b, float a, const std::string& label) const {
+    visualization_msgs::msg::Marker marker;
+    marker.header.stamp = stamp;
+    marker.header.frame_id = target_frame_;
+    marker.ns = ns;
+    marker.id = id;
+    marker.type = visualization_msgs::msg::Marker::CUBE;
+    marker.action = visualization_msgs::msg::Marker::ADD;
+    marker.pose.position.x = x;
+    marker.pose.position.y = y;
+    marker.pose.position.z = z;
+    marker.pose.orientation.w = 1.0;
+    marker.scale.x = size_x;
+    marker.scale.y = size_y;
+    marker.scale.z = size_z;
+    marker.color.r = r;
+    marker.color.g = g;
+    marker.color.b = b;
+    marker.color.a = a;
+    marker.lifetime = rclcpp::Duration::from_seconds(0.5);
+    marker.text = label;
+    return marker;
+  }
+
   std::string target_frame_;
   std::string lidar_topic_;
   std::string depth_topic_;
   std::string output_topic_;
+  std::string envelope_topic_;
   double front_m_{};
   double back_m_{};
   double side_m_{};
@@ -201,6 +272,12 @@ class MDogPointCloudFusionNode : public rclcpp::Node {
   double voxel_size_{};
   double stale_timeout_sec_{};
   double publish_rate_{};
+  bool self_filter_enabled_{true};
+  double self_filter_front_m_{};
+  double self_filter_back_m_{};
+  double self_filter_side_m_{};
+  double self_filter_min_z_{};
+  double self_filter_max_z_{};
 
   std::mutex mutex_;
   CachedCloud latest_lidar_;
@@ -208,6 +285,7 @@ class MDogPointCloudFusionNode : public rclcpp::Node {
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr lidar_sub_;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr depth_sub_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr fused_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr envelope_pub_;
   rclcpp::TimerBase::SharedPtr timer_;
   std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
   std::unique_ptr<tf2_ros::TransformListener> tf_listener_;
