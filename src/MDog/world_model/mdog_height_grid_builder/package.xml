@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>mdog_height_grid_builder</name>
+  <version>0.1.0</version>
+  <description>Builds a 2.5D local height grid from fused point clouds.</description>
+  <maintainer email="user@example.com">MDog</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>mdog_grid_msgs</depend>
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+
+  <export><build_type>ament_cmake</build_type></export>
+</package>

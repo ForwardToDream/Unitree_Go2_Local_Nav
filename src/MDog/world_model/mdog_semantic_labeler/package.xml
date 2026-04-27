@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>mdog_semantic_labeler</name>
+  <version>0.1.0</version>
+  <description>Labels MDog height-grid cells with local semantic traversability classes.</description>
+  <maintainer email="user@example.com">MDog</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>mdog_grid_msgs</depend>
+  <depend>rclcpp</depend>
+
+  <export><build_type>ament_cmake</build_type></export>
+</package>

@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>mdog_bringup</name>
+  <version>0.1.0</version>
+  <description>Bringup launch and RViz configuration for the modular MDog local navigation stack.</description>
+  <maintainer email="user@example.com">MDog</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <exec_depend>mdog_body_marker_viz</exec_depend>
+  <exec_depend>mdog_cloud_fusion</exec_depend>
+  <exec_depend>mdog_cloud_self_filter</exec_depend>
+  <exec_depend>mdog_cloud_transform</exec_depend>
+  <exec_depend>mdog_cmd_vel_output</exec_depend>
+  <exec_depend>mdog_dog_model</exec_depend>
+  <exec_depend>mdog_height_grid_builder</exec_depend>
+  <exec_depend>mdog_intent_arbitrator</exec_depend>
+  <exec_depend>mdog_occupancy_projection</exec_depend>
+  <exec_depend>mdog_owner_intent_ui</exec_depend>
+  <exec_depend>mdog_owner_model</exec_depend>
+  <exec_depend>mdog_semantic_labeler</exec_depend>
+  <exec_depend>mdog_semantic_marker_viz</exec_depend>
+  <exec_depend>mdog_traversability_evaluator</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+
+  <export><build_type>ament_cmake</build_type></export>
+</package>

@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>mdog_intent_arbitrator</name>
+  <version>0.1.0</version>
+  <description>Arbitrates owner intent with traversability into MDog navigation decisions.</description>
+  <maintainer email="user@example.com">MDog</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>geometry_msgs</depend>
+  <depend>mdog_intent_msgs</depend>
+  <depend>mdog_planning_msgs</depend>
+  <depend>mdog_traversability_msgs</depend>
+  <depend>rclcpp</depend>
+
+  <export><build_type>ament_cmake</build_type></export>
+</package>

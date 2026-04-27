@@ -26,14 +26,35 @@ GROUND_Z_IN_BASE_M="-0.35"
 STALE_TIMEOUT_SEC="0.5"
 
 MDOG_PACKAGES=(
-  mdog_interfaces
-  mdog_owner_intent_ui
+  mdog_intent_msgs
+  mdog_body_msgs
+  mdog_grid_msgs
+  mdog_traversability_msgs
+  mdog_planning_msgs
+  mdog_dog_model
   mdog_owner_model
+  mdog_cloud_transform
+  mdog_cloud_self_filter
+  mdog_cloud_fusion
+  mdog_height_grid_builder
+  mdog_semantic_labeler
+  mdog_occupancy_projection
+  mdog_semantic_marker_viz
+  mdog_body_marker_viz
+  mdog_traversability_evaluator
+  mdog_intent_arbitrator
+  mdog_cmd_vel_output
+  mdog_owner_intent_ui
+  mdog_bringup
+  mdog_system_checks
+)
+
+LEGACY_MDOG_PACKAGES=(
+  mdog_interfaces
   mdog_pointcloud_fusion
   mdog_semantic_map
   mdog_traversability
   mdog_local_planner
-  mdog_bringup
 )
 
 print_help() {
@@ -211,11 +232,17 @@ safe_source() {
 mdog_install_ready() {
   [[ -f "${WS_DIR}/install/setup.bash" ]] \
     && [[ -x "${WS_DIR}/install/mdog_owner_intent_ui/lib/mdog_owner_intent_ui/mdog_owner_intent_ui.py" ]] \
+    && [[ -x "${WS_DIR}/install/mdog_dog_model/lib/mdog_dog_model/mdog_dog_model_node" ]] \
     && [[ -x "${WS_DIR}/install/mdog_owner_model/lib/mdog_owner_model/mdog_owner_model_node" ]] \
-    && [[ -x "${WS_DIR}/install/mdog_pointcloud_fusion/lib/mdog_pointcloud_fusion/mdog_pointcloud_fusion_node" ]] \
-    && [[ -x "${WS_DIR}/install/mdog_semantic_map/lib/mdog_semantic_map/mdog_semantic_map_node" ]] \
-    && [[ -x "${WS_DIR}/install/mdog_traversability/lib/mdog_traversability/mdog_traversability_node" ]] \
-    && [[ -x "${WS_DIR}/install/mdog_local_planner/lib/mdog_local_planner/mdog_local_planner_node" ]] \
+    && [[ -x "${WS_DIR}/install/mdog_cloud_transform/lib/mdog_cloud_transform/mdog_cloud_transform_node" ]] \
+    && [[ -x "${WS_DIR}/install/mdog_cloud_self_filter/lib/mdog_cloud_self_filter/mdog_cloud_self_filter_node" ]] \
+    && [[ -x "${WS_DIR}/install/mdog_cloud_fusion/lib/mdog_cloud_fusion/mdog_cloud_fusion_node" ]] \
+    && [[ -x "${WS_DIR}/install/mdog_height_grid_builder/lib/mdog_height_grid_builder/mdog_height_grid_builder_node" ]] \
+    && [[ -x "${WS_DIR}/install/mdog_semantic_labeler/lib/mdog_semantic_labeler/mdog_semantic_labeler_node" ]] \
+    && [[ -x "${WS_DIR}/install/mdog_occupancy_projection/lib/mdog_occupancy_projection/mdog_occupancy_projection_node" ]] \
+    && [[ -x "${WS_DIR}/install/mdog_traversability_evaluator/lib/mdog_traversability_evaluator/mdog_traversability_evaluator_node" ]] \
+    && [[ -x "${WS_DIR}/install/mdog_intent_arbitrator/lib/mdog_intent_arbitrator/mdog_intent_arbitrator_node" ]] \
+    && [[ -x "${WS_DIR}/install/mdog_cmd_vel_output/lib/mdog_cmd_vel_output/mdog_cmd_vel_output_node" ]] \
     && [[ -f "${WS_DIR}/install/mdog_bringup/share/mdog_bringup/launch/mdog_local_nav.launch.py" ]]
 }
 
@@ -228,6 +255,13 @@ safe_source "${ROS_SETUP}"
 
 if [[ "${DO_BUILD}" == "true" ]] || [[ "${DO_BUILD}" == "auto" && ! mdog_install_ready ]]; then
   echo "[INFO] Building MDog packages in workspace: ${WS_DIR}"
+  echo "[INFO] Clearing MDog package build caches to avoid stale moved-source CMake paths"
+  for package in "${MDOG_PACKAGES[@]}"; do
+    rm -rf "${WS_DIR}/build/${package}"
+  done
+  for package in "${LEGACY_MDOG_PACKAGES[@]}"; do
+    rm -rf "${WS_DIR}/build/${package}" "${WS_DIR}/install/${package}"
+  done
   (
     cd "${WS_DIR}"
     colcon build --symlink-install --packages-select "${MDOG_PACKAGES[@]}"

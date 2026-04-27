@@ -26,3 +26,5 @@
 .vscode/
 .cache/
 *.log
+
+**/README.md
