@@ -1,0 +1,12 @@
+std_msgs/Header header
+float32 front_score
+float32 left_score
+float32 right_score
+float32 left_front_score
+float32 right_front_score
+bool front_passable
+bool left_passable
+bool right_passable
+float32 min_clearance_m
+float32 recommended_heading_rad
+string reason

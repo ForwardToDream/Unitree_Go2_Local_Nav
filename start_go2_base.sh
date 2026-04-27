@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WS_DIR="${SCRIPT_DIR}"
 
-USE_RVIZ="true"
+USE_RVIZ="false"
 USE_JOINT_STATE_PUBLISHER="true"
 USE_GAZEBO_GUI="true"
 USE_VEL_CONTROLLER="true"
@@ -19,7 +19,7 @@ DEMO_ANGULAR_Z="0.00"
 
 print_help() {
   cat <<'EOF'
-Go2 Gazebo + RViz fused launcher
+Go2 Gazebo fused launcher
 
 Usage:
   ./start_go2_base.sh [options] [extra_ros2_launch_args...]
@@ -27,7 +27,8 @@ Usage:
 Options:
   --build               Force run colcon build before launch
   --skip-build          Skip build
-  --no-rviz             Launch without RViz
+  --rviz                Launch with RViz
+  --no-rviz             Launch without RViz (default)
   --no-jsp              Disable joint_state_publisher
   --no-controller       Do not launch the Go2 velocity controller GUI
   --headless            Launch Gazebo server only, without gzclient
@@ -45,6 +46,7 @@ Options:
 
 Examples:
   ./start_go2_base.sh
+  ./start_go2_base.sh --rviz
   ./start_go2_base.sh --no-freeze
   ./start_go2_base.sh --build
   ./start_go2_base.sh --world /opt/ros/humble/share/gazebo_ros/worlds/empty.world
@@ -64,6 +66,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --no-rviz)
       USE_RVIZ="false"
+      shift
+      ;;
+    --rviz)
+      USE_RVIZ="true"
       shift
       ;;
     --no-jsp)

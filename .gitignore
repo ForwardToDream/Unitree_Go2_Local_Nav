@@ -12,6 +12,7 @@
 !.devcontainer/
 !.devcontainer/start.sh
 !start_go2_base.sh
+!start_go2_nav.sh
 
 # Drop generated artifacts even if they are under src/.
 **/build/
